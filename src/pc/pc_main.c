@@ -20,6 +20,8 @@
 
 #include "gfx/gfx_pc.h"
 #include "gfx/gfx_opengl.h"
+#include "gfx/gfx_vitagl.h"
+#include "gfx/gfx_vita.h"
 #include "gfx/gfx_direct3d11.h"
 #include "gfx/gfx_direct3d12.h"
 #include "gfx/gfx_dxgi.h"
@@ -42,6 +44,10 @@
 #include "compat.h"
 
 #define CONFIG_FILE "settings.ini"
+
+#ifdef TARGET_VITA
+unsigned int _newlib_heap_size_user = 64 * 1024 * 1024;
+#endif
 
 OSMesg gMainReceivedMesg;
 OSMesgQueue gSIEventMesgQueue;
@@ -195,8 +201,8 @@ void main_func(const char* gfx_dir) {
     main_pool_init();
     gGfxAllocOnlyPool = alloc_only_pool_init();
 #else
-    static u64 pool[0x165000/8 / 4 * sizeof(void *)];
-    main_pool_init(pool, pool + sizeof(pool) / sizeof(pool[0]));
+    static u8 pool[DOUBLE_SIZE_ON_64_BIT(0x165000)] __attribute__((aligned(16)));
+    main_pool_init(pool, pool + sizeof(pool));
 #endif
     gEffectsMemoryPool = mem_pool_init(0x4000, MEMORY_POOL_LEFT);
 
@@ -250,6 +256,12 @@ void main_func(const char* gfx_dir) {
     case 0:
         rendering_api = &gfx_opengl_api;
         wm_api = &gfx_sdl;
+        break;
+
+#elif defined(TARGET_VITA)
+    case 0:
+        rendering_api = &gfx_vitagl_api;
+        wm_api = &gfx_vita;
         break;
 
 #elif defined(_WIN32) || defined(_WIN64)

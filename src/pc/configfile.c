@@ -347,7 +347,14 @@ void configfile_load(const char *filename) {
 
     printf("Loading configuration from '%s'\n", filename);
 
+#ifdef TARGET_VITA
+    char m_filename[64] = "ux0:data/SM64Plus";
+    strcat(m_filename, filename);
+    file = fopen(m_filename, "r");
+#else
     file = fopen(filename, "r");
+#endif
+
     if (file == NULL) {
         // Create a new config file and save defaults
         printf("Config file '%s' not found. Creating it.\n", filename);
@@ -422,7 +429,13 @@ void configfile_save(const char *filename) {
     mkdir(dir, 0777);
 #endif
 
+#ifdef TARGET_VITA
+    char m_filename[64] = "ux0:data/SM64Plus";
+    strcat(m_filename, filename);
+    file = fopen(m_filename, "w");
+#else
     file = fopen(filename, "w");
+#endif    
     if (file == NULL) {
         // error
         return;

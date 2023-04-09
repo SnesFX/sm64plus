@@ -197,7 +197,11 @@ static Gfx *intro_backdrop_one_image(s32 index, s8 *backgroundTable) {
 
     if (configForce4by3) {
         vIntroBgTable = segmented_to_virtual(textureTables[backgroundTable[index]]);
+#ifndef TARGET_VITA        
         guTranslate(mtx, xCoords[index], yCoords[index], 0.0f);
+#else
+        guTranslate(mtx, xCoords[index], yCoords[index], -1.0f);
+#endif        
     }
     else {
         vIntroBgTable = segmented_to_virtual(textureTables[backgroundTable[0]]);

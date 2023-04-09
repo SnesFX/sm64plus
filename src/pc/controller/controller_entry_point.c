@@ -9,10 +9,18 @@
 
 #include "game/settings.h"
 
+#ifdef TARGET_VITA
+#include "controller_vita.h"
+#endif
+
 static struct ControllerAPI *controller_implementations[] = {
-    &controller_recorded_tas,
+#ifdef TARGET_VITA
+    &controller_vita,
+#else
     &controller_sdl,
     &controller_keyboard,
+#endif
+    &controller_recorded_tas,    
 };
 
 s32 osContInit(UNUSED OSMesgQueue *mq, u8 *controllerBits, UNUSED OSContStatus *status) {

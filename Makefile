@@ -19,6 +19,8 @@ DEFINES :=
 TARGET_N64 ?= 0
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
+# Build for PS Vita
+TARGET_VITA ?= 0
 # Compiler to use (ido or gcc)
 
 
@@ -41,10 +43,8 @@ ifeq ($(TARGET_N64),0)
   NON_MATCHING := 1
   GRUCODE := f3dex2e
   TARGET_WINDOWS := 0
-  ifeq ($(TARGET_WEB),0)
-    ifeq ($(shell uname -s),Darwin)
-      TARGET_MACOS := 1
-    else
+  ifeq ($(TARGET_VITA), 0)
+    ifeq ($(TARGET_WEB),0)
       ifeq ($(OS),Windows_NT)
         TARGET_WINDOWS := 1
       else
@@ -54,6 +54,10 @@ ifeq ($(TARGET_N64),0)
   endif
 
 endif
+
+    ifeq ($(TARGET_VITA), 0)
+      ENABLE_OPENGL ?= 1
+    endif
 
 ifeq ($(COMPILER),gcc)
   NON_MATCHING := 1
@@ -242,6 +246,8 @@ BUILD_DIR_BASE := build
 # BUILD_DIR is the location where all build artifacts are placed
 ifeq ($(TARGET_N64),1)
   BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)
+else ifeq ($(TARGET_VITA),1)
+  BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)_vita
 else ifeq ($(TARGET_WEB),1)
   BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)_web
 else
@@ -429,6 +435,21 @@ export LANG := C
 
 else # TARGET_N64
 
+ifeq ($(TARGET_VITA),1)
+  CROSS := arm-vita-eabi-
+  OPT_FLAGS += -mtune=cortex-a9 -mfpu=neon
+  VITA_APPNAME := Super Mario 64 Plus
+  VITA_TITLEID := SMPE64001
+
+  AS        := $(CROSS)as
+  CC        := $(CROSS)gcc
+  CPP       := $(CROSS)cpp -P
+  LD        := $(CROSS)g++
+  AR        := $(CROSS)ar
+  OBJDUMP   := $(CROSS)objdump
+  OBJCOPY   := $(CROSS)objcopy
+  PYTHON    := python3
+else
 AS := as
 ifneq ($(TARGET_WEB),1)
   CC := gcc
@@ -444,6 +465,7 @@ endif
 OBJDUMP := objdump
 OBJCOPY := objcopy
 PYTHON := python3
+endif
 
 ifeq ($(TARGET_MACOS),1)
   AS := i686-w64-mingw32-as
@@ -477,6 +499,16 @@ ifeq ($(TARGET_WEB),1)
   PLATFORM_CFLAGS  := -DTARGET_WEB
   PLATFORM_LDFLAGS := -lm -no-pie -s TOTAL_MEMORY=20MB -g4 --source-map-base http://localhost:8080/ -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']"
 endif
+ifeq ($(TARGET_VITA),1)
+  PLATFORM_CFLAGS := $(OPT_FLAGS) $(INCLUDE_CFLAGS) $(VERSION_CFLAGS) $(GRUCODE_CFLAGS) -Wfatal-errors -fsigned-char -DTARGET_VITA -D__vita__
+  PLATFORM_LDFLAGS := -Wl,-q \
+    -lvitaGL -lvitashark -lSDL2 \
+    -lScePvf_stub -lmathneon -lSceAppMgr_stub \
+    -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lm \
+    -lSceAppUtil_stub -lc -lScePower_stub -lSceCommonDialog_stub \
+    -lSceAudio_stub -lSceShaccCg_stub -lSceGxm_stub -lSceDisplay_stub \
+    -lSceIofilemgr_stub -lSceHid_stub -lSceMotion_stub -lm
+endif
 
 PLATFORM_CFLAGS += -DNO_SEGMENTED_MEMORY -DUSE_SYSTEM_MALLOC
 
@@ -501,7 +533,11 @@ endif
 GFX_CFLAGS += -DWIDESCREEN
 
 CC_CHECK := $(CC) -fsyntax-only -fsigned-char -Wall -Wextra -Wno-format-security -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS)
-CFLAGS := $(OPT_FLAGS) -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS) -fno-strict-aliasing -fwrapv -march=native
+ifeq ($(TARGET_VITA), 0)
+  CFLAGS := $(OPT_FLAGS) $(INCLUDE_CFLAGS) -D_LANGUAGE_C $(VERSION_CFLAGS) $(MATCH_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS) $(GRUCODE_CFLAGS) -fno-strict-aliasing -fwrapv -march=native
+else
+  CFLAGS := $(OPT_FLAGS) -D_LANGUAGE_C $(DEF_INC_CFLAGS) $(PLATFORM_CFLAGS) $(GFX_CFLAGS) -fno-strict-aliasing -fwrapv -march=native
+endif
 
 ifeq ($(CUSTOM_TEXTURES),1)
   SKYCONV_ARGS := --store-names --write-tiles "$(BUILD_DIR)/textures/skybox_tiles"
@@ -967,6 +1003,18 @@ $(EXE): $(O_FILES) $(MIO0_FILES:.mio0=.o) $(ULTRA_O_FILES) $(GODDARD_O_FILES)
 	  $(shell a=$(PATH); b=$${a%%:*}; cp "$${b}/libwinpthread-1.dll" "$(BUILD_DIR)/libwinpthread-1.dll")
   endif
 endif
+
+vpk: $(EXE)
+	@cp -r --remove-destination vita/sce_sys $(BUILD_DIR)/
+	@cp -r --remove-destination vita/shaders $(BUILD_DIR)/
+	@cp $< $<.unstripped.elf
+	@$(CROSS)strip -g $<
+	@vita-elf-create $< $(EXE).velf
+	@vita-make-fself -s -c $(EXE).velf $(BUILD_DIR)/eboot.bin
+	@vita-mksfoex -s TITLE_ID="$(VITA_TITLEID)" "$(VITA_APPNAME)" $(BUILD_DIR)/sce_sys/param.sfo
+	@vita-pack-vpk -s $(BUILD_DIR)/sce_sys/param.sfo -b $(BUILD_DIR)/eboot.bin \
+		--add $(BUILD_DIR)/sce_sys=sce_sys \
+		$(EXE).vpk
 
 .PHONY: all clean distclean default diff test load libultra
 # with no prerequisites, .SECONDARY causes no intermediate target to be removed
