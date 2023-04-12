@@ -2,7 +2,7 @@
 
 SM64Plus Vita is a fork of [sm64plus](https://github.com/MorsGames/sm64plus) that attempts to make it playable on the PsVita.
 
-* SM64 Plus Vita Launcher Link: Coming soon.
+SM64 Plus Vita Launcher Link: Coming soon.
 
 ## File Locations
 Savedata is stored at `ux0:data/SM64Plus/savedata.bin`. `cont.m64` can be put either into the same folder, or into `ux0:app/SMPE64001/` for TAS input.
