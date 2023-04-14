@@ -67,7 +67,7 @@ void show_crash_screen_and_hang(void) {
         fbFillColor = 0x6253;
         fb_fill(10, 10, 300, 220);
 
-        fb_print_str(80, 20, "AN ERROR HAS OCCURRED, REPORT TO THE SM64PLUS VITA REPO'S ISSUE TAB!");
+        fb_print_str(80, 20, "AN ERROR HAS OCCURRED!");
         fb_print_int_hex(80, 30, errno, 8);
         fb_print_str(95, 30, szErrCodes[errno]);
 
@@ -89,7 +89,7 @@ void show_crash_screen_and_hang(void) {
         fbFillColor = 0x5263;
         fb_fill(10, 10, 300, 220);
 
-        fb_print_str(80, 20, "ASSERTION FAILED, REPORT TO THE SM64PLUS VITA REPO'S ISSUE TAB!!");
+        fb_print_str(80, 20, "ASSERTION FAILED!");
 
         afterFileX = fb_print_str(80, 30, pAssertFile);
         fb_print_str(afterFileX, 30, ":");
