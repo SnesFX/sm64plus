@@ -28,7 +28,7 @@ jobs:
              ./build_deps.sh  
       - name: Build SM64Plus
         run: |
-          make TARGET_VITA=1 vpk
+          make TARGET_VITA=1 vpk -j4
       - name: Upload VPK
         uses: actions/upload-artifact@v2
         with:
