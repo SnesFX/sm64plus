@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install dependencies
-        run: sudo apt install -y git build-essential pkg-config libusb-1.0-0-dev libsdl2-dev
+        run: sudo apt install -y git build-essential pkg-config libusb-1.0-0-dev libsdl2-dev bsdmainutils
       - name: Install vita dependencies
         run: chmod u+x build_deps.sh
              ./build_deps.sh  
