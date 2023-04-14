@@ -1,0 +1,37 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build SM64Plus
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  psvita:
+    runs-on: ubuntu-latest
+    container: gnuton/vitasdk-docker:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo apt install -y git build-essential pkg-config libusb-1.0-0-dev libsdl2-dev
+      - name: Install vita dependencies
+        run: chmod u+x build_deps.sh
+             ./build_deps.sh  
+      - name: Build SM64Plus
+        run: |
+          make TARGET_VITA=1 vpk
+      - name: Upload VPK
+        uses: actions/upload-artifact@v2
+        with:
+          name: SM64Plus-vita
+          path: build/us_vita/
+          if-no-files-found: error
